@@ -48,6 +48,14 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.DeltaTLabel = new System.Windows.Forms.Label();
+            this.LogSaveButton = new System.Windows.Forms.Button();
+            this.LogStopButton = new System.Windows.Forms.Button();
+            this.fileNameTextBox = new System.Windows.Forms.TextBox();
+            this.LogStartButton = new System.Windows.Forms.Button();
+            this.FileButton = new System.Windows.Forms.Button();
+            this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.fileNameLabel = new System.Windows.Forms.Label();
+            this.LinesLoggedLabel = new System.Windows.Forms.Label();
             this.ComPortGroupBox.SuspendLayout();
             this.OptionsGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NoOfDataNumericUpDown)).BeginInit();
@@ -64,39 +72,41 @@
             this.ComPortGroupBox.Controls.Add(this.COMPortComboBox);
             this.ComPortGroupBox.Controls.Add(this.COMBaudComboBox);
             this.ComPortGroupBox.Controls.Add(this.COMConnectButton);
-            this.ComPortGroupBox.Location = new System.Drawing.Point(715, 378);
+            this.ComPortGroupBox.Location = new System.Drawing.Point(715, 433);
             this.ComPortGroupBox.Margin = new System.Windows.Forms.Padding(2);
             this.ComPortGroupBox.Name = "ComPortGroupBox";
             this.ComPortGroupBox.Padding = new System.Windows.Forms.Padding(2);
-            this.ComPortGroupBox.Size = new System.Drawing.Size(124, 205);
+            this.ComPortGroupBox.Size = new System.Drawing.Size(124, 150);
             this.ComPortGroupBox.TabIndex = 0;
             this.ComPortGroupBox.TabStop = false;
             this.ComPortGroupBox.Text = "COM Port";
             // 
             // StopStreamButton
             // 
+            this.StopStreamButton.BackColor = System.Drawing.Color.LightCoral;
             this.StopStreamButton.Enabled = false;
             this.StopStreamButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.StopStreamButton.Location = new System.Drawing.Point(52, 179);
+            this.StopStreamButton.Location = new System.Drawing.Point(65, 119);
             this.StopStreamButton.Margin = new System.Windows.Forms.Padding(2);
             this.StopStreamButton.Name = "StopStreamButton";
-            this.StopStreamButton.Size = new System.Drawing.Size(68, 22);
+            this.StopStreamButton.Size = new System.Drawing.Size(55, 22);
             this.StopStreamButton.TabIndex = 6;
             this.StopStreamButton.Text = "Stop";
-            this.StopStreamButton.UseVisualStyleBackColor = true;
+            this.StopStreamButton.UseVisualStyleBackColor = false;
             this.StopStreamButton.Click += new System.EventHandler(this.StopStreamButton_Click);
             // 
             // StartStreamButton
             // 
+            this.StartStreamButton.BackColor = System.Drawing.Color.LimeGreen;
             this.StartStreamButton.Enabled = false;
             this.StartStreamButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.StartStreamButton.Location = new System.Drawing.Point(52, 153);
+            this.StartStreamButton.Location = new System.Drawing.Point(4, 119);
             this.StartStreamButton.Margin = new System.Windows.Forms.Padding(2);
             this.StartStreamButton.Name = "StartStreamButton";
-            this.StartStreamButton.Size = new System.Drawing.Size(68, 22);
+            this.StartStreamButton.Size = new System.Drawing.Size(55, 22);
             this.StartStreamButton.TabIndex = 5;
             this.StartStreamButton.Text = "Start";
-            this.StartStreamButton.UseVisualStyleBackColor = true;
+            this.StartStreamButton.UseVisualStyleBackColor = false;
             this.StartStreamButton.Click += new System.EventHandler(this.StartStreamButton_Click);
             // 
             // COMRefreshButton
@@ -180,13 +190,13 @@
             // 
             this.RawTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.RawTextBox.Location = new System.Drawing.Point(9, 378);
+            this.RawTextBox.Location = new System.Drawing.Point(9, 433);
             this.RawTextBox.Margin = new System.Windows.Forms.Padding(2);
             this.RawTextBox.MaxLength = 1000;
             this.RawTextBox.Multiline = true;
             this.RawTextBox.Name = "RawTextBox";
             this.RawTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.RawTextBox.Size = new System.Drawing.Size(701, 206);
+            this.RawTextBox.Size = new System.Drawing.Size(701, 151);
             this.RawTextBox.TabIndex = 1;
             // 
             // ZedGraphControl1
@@ -206,13 +216,19 @@
             this.ZedGraphControl1.ScrollMinX = 0D;
             this.ZedGraphControl1.ScrollMinY = 0D;
             this.ZedGraphControl1.ScrollMinY2 = 0D;
-            this.ZedGraphControl1.Size = new System.Drawing.Size(701, 362);
+            this.ZedGraphControl1.Size = new System.Drawing.Size(701, 417);
             this.ZedGraphControl1.TabIndex = 2;
             // 
             // OptionsGroupBox
             // 
             this.OptionsGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.OptionsGroupBox.BackColor = System.Drawing.SystemColors.Control;
+            this.OptionsGroupBox.Controls.Add(this.fileNameLabel);
+            this.OptionsGroupBox.Controls.Add(this.FileButton);
+            this.OptionsGroupBox.Controls.Add(this.LogStartButton);
+            this.OptionsGroupBox.Controls.Add(this.fileNameTextBox);
+            this.OptionsGroupBox.Controls.Add(this.LogStopButton);
+            this.OptionsGroupBox.Controls.Add(this.LogSaveButton);
             this.OptionsGroupBox.Controls.Add(this.NoOfDataNumericUpDown);
             this.OptionsGroupBox.Controls.Add(this.label2);
             this.OptionsGroupBox.Controls.Add(this.label1);
@@ -223,7 +239,7 @@
             this.OptionsGroupBox.Margin = new System.Windows.Forms.Padding(2);
             this.OptionsGroupBox.Name = "OptionsGroupBox";
             this.OptionsGroupBox.Padding = new System.Windows.Forms.Padding(2);
-            this.OptionsGroupBox.Size = new System.Drawing.Size(124, 199);
+            this.OptionsGroupBox.Size = new System.Drawing.Size(124, 326);
             this.OptionsGroupBox.TabIndex = 3;
             this.OptionsGroupBox.TabStop = false;
             this.OptionsGroupBox.Text = "Options";
@@ -287,22 +303,100 @@
             // groupBox1
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.LinesLoggedLabel);
             this.groupBox1.Controls.Add(this.DeltaTLabel);
-            this.groupBox1.Location = new System.Drawing.Point(715, 215);
+            this.groupBox1.Location = new System.Drawing.Point(715, 342);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(119, 158);
+            this.groupBox1.Size = new System.Drawing.Size(124, 86);
             this.groupBox1.TabIndex = 4;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Status";
             // 
             // DeltaTLabel
             // 
+            this.DeltaTLabel.Font = new System.Drawing.Font("Monospac821 BT", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.DeltaTLabel.Location = new System.Drawing.Point(4, 16);
             this.DeltaTLabel.Name = "DeltaTLabel";
-            this.DeltaTLabel.Size = new System.Drawing.Size(109, 23);
+            this.DeltaTLabel.Size = new System.Drawing.Size(116, 23);
             this.DeltaTLabel.TabIndex = 0;
-            this.DeltaTLabel.Text = "Delta T =      0";
+            this.DeltaTLabel.Text = "Delta T = 0";
             this.DeltaTLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // LogSaveButton
+            // 
+            this.LogSaveButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.LogSaveButton.Location = new System.Drawing.Point(64, 269);
+            this.LogSaveButton.Name = "LogSaveButton";
+            this.LogSaveButton.Size = new System.Drawing.Size(55, 23);
+            this.LogSaveButton.TabIndex = 6;
+            this.LogSaveButton.Text = "Save";
+            this.LogSaveButton.UseVisualStyleBackColor = true;
+            this.LogSaveButton.Click += new System.EventHandler(this.LogSaveButton_Click);
+            // 
+            // LogStopButton
+            // 
+            this.LogStopButton.BackColor = System.Drawing.Color.LightCoral;
+            this.LogStopButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.LogStopButton.Location = new System.Drawing.Point(64, 298);
+            this.LogStopButton.Name = "LogStopButton";
+            this.LogStopButton.Size = new System.Drawing.Size(55, 23);
+            this.LogStopButton.TabIndex = 7;
+            this.LogStopButton.Text = "Stop";
+            this.LogStopButton.UseVisualStyleBackColor = false;
+            this.LogStopButton.Click += new System.EventHandler(this.LogStopButton_Click);
+            // 
+            // fileNameTextBox
+            // 
+            this.fileNameTextBox.Location = new System.Drawing.Point(5, 243);
+            this.fileNameTextBox.Name = "fileNameTextBox";
+            this.fileNameTextBox.Size = new System.Drawing.Size(114, 20);
+            this.fileNameTextBox.TabIndex = 8;
+            // 
+            // LogStartButton
+            // 
+            this.LogStartButton.BackColor = System.Drawing.Color.LimeGreen;
+            this.LogStartButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.LogStartButton.Location = new System.Drawing.Point(5, 298);
+            this.LogStartButton.Name = "LogStartButton";
+            this.LogStartButton.Size = new System.Drawing.Size(55, 23);
+            this.LogStartButton.TabIndex = 9;
+            this.LogStartButton.Text = "Start";
+            this.LogStartButton.UseVisualStyleBackColor = false;
+            this.LogStartButton.Click += new System.EventHandler(this.LogStartButton_Click);
+            // 
+            // FileButton
+            // 
+            this.FileButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.FileButton.Location = new System.Drawing.Point(5, 269);
+            this.FileButton.Name = "FileButton";
+            this.FileButton.Size = new System.Drawing.Size(55, 23);
+            this.FileButton.TabIndex = 10;
+            this.FileButton.Text = "File";
+            this.FileButton.UseVisualStyleBackColor = true;
+            this.FileButton.Click += new System.EventHandler(this.FileButton_Click);
+            // 
+            // saveFileDialog
+            // 
+            this.saveFileDialog.Title = "Save Log";
+            // 
+            // fileNameLabel
+            // 
+            this.fileNameLabel.Location = new System.Drawing.Point(4, 180);
+            this.fileNameLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.fileNameLabel.Name = "fileNameLabel";
+            this.fileNameLabel.Size = new System.Drawing.Size(115, 60);
+            this.fileNameLabel.TabIndex = 11;
+            this.fileNameLabel.Text = "File:";
+            // 
+            // LinesLoggedLabel
+            // 
+            this.LinesLoggedLabel.Font = new System.Drawing.Font("Monospac821 BT", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LinesLoggedLabel.Location = new System.Drawing.Point(4, 39);
+            this.LinesLoggedLabel.Name = "LinesLoggedLabel";
+            this.LinesLoggedLabel.Size = new System.Drawing.Size(116, 23);
+            this.LinesLoggedLabel.TabIndex = 1;
+            this.LinesLoggedLabel.Text = "Logged = 0";
+            this.LinesLoggedLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // Form1
             // 
@@ -315,6 +409,7 @@
             this.Controls.Add(this.RawTextBox);
             this.Controls.Add(this.ComPortGroupBox);
             this.Margin = new System.Windows.Forms.Padding(2);
+            this.MinimumSize = new System.Drawing.Size(864, 631);
             this.Name = "Form1";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.Text = "DataPlot V4";
@@ -350,6 +445,14 @@
         private System.Windows.Forms.Button StartStreamButton;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Label DeltaTLabel;
+        private System.Windows.Forms.Button FileButton;
+        private System.Windows.Forms.Button LogStartButton;
+        private System.Windows.Forms.TextBox fileNameTextBox;
+        private System.Windows.Forms.Button LogStopButton;
+        private System.Windows.Forms.Button LogSaveButton;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog;
+        private System.Windows.Forms.Label fileNameLabel;
+        private System.Windows.Forms.Label LinesLoggedLabel;
     }
 }
 

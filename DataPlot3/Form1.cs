@@ -39,6 +39,11 @@ namespace DataPlot3
         private byte id = 255;
         private uint oldT, deltaT;
 
+        private bool Logging;
+        private string logfilename;
+        private int linesLogged;
+
+        List<AccelDataPacket> Loglist = new List<AccelDataPacket>();
         List<RollingPointPairList> Data = new List<RollingPointPairList>();
         List<IPointListEdit> IPoints = new List<IPointListEdit>();
 
@@ -95,6 +100,8 @@ namespace DataPlot3
         public Form1()
         {
             InitializeComponent();
+
+            Logging = false;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -190,15 +197,15 @@ namespace DataPlot3
                 LineItem curve = ZedGraphControl1.GraphPane.CurveList[j] as LineItem;
 
                 IPoints.Add(curve.Points as IPointListEdit);
-            }       
+            }
 
-            
+
         }
 
         private void deleteCurves()
         {
             ZedGraphControl1.GraphPane.CurveList.Clear();
-        }        
+        }
 
         private bool processCOM()
         {
@@ -294,10 +301,14 @@ namespace DataPlot3
             deltaT = APacket.t - oldT;
             oldT = APacket.t;
 
-            DeltaTLabel.Text = string.Format("Delta T = {0,5}", deltaT);
-
             if (deltaT > 2500)
                 RawTextBox.AppendText(string.Format("Packet lost at T = {0,5} delta T = {1,5}\n", APacket.t, deltaT));
+
+            if (Logging)
+            {
+                Loglist.Add(APacket);
+                linesLogged++;
+            }
         }
 
         private PointPair updateCurve(IPointListEdit list, double t, double v)
@@ -321,6 +332,7 @@ namespace DataPlot3
             ZedGraphControl1.GraphPane.CurveList[k].Points[0].Y = v;
              */
         }
+
         private void SerialPort_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
         {
             while (Port.BytesToRead > 0)
@@ -378,6 +390,8 @@ namespace DataPlot3
         {
             ZedGraphControl1.AxisChange();
             ZedGraphControl1.Invalidate();
+            LinesLoggedLabel.Text = string.Format("Logged = {0,7}", linesLogged);
+            DeltaTLabel.Text = string.Format("Delta T = {0,7}", deltaT);
         }
 
         private void COMRefreshButton_Click(object sender, EventArgs e)
@@ -393,6 +407,72 @@ namespace DataPlot3
         private void StopStreamButton_Click(object sender, EventArgs e)
         {
             Port.Write("o");
+        }
+
+        private void FileButton_Click(object sender, EventArgs e)
+        {
+            DialogResult result = saveFileDialog.ShowDialog();
+
+            if (result == DialogResult.OK) // Test result.
+            {
+                logfilename = saveFileDialog.FileName;
+
+                fileNameTextBox.Text = Path.GetFileName(logfilename);
+                fileNameLabel.Text = Path.GetDirectoryName(saveFileDialog.FileName);
+
+                RawTextBox.AppendText("Log File: " + logfilename + "\n"); // <-- For debugging use.
+            }
+            else
+            {
+                RawTextBox.AppendText(result.ToString() + "\n"); // <-- For debugging use.
+            }
+        }
+
+        private void LogStartButton_Click(object sender, EventArgs e)
+        {
+            logfilename = fileNameLabel.Text + "\\" + fileNameTextBox.Text;           
+            Logging = true;
+            linesLogged = 0;
+
+            Loglist.Clear();
+        }
+
+        private void LogStopButton_Click(object sender, EventArgs e)
+        {
+            Logging = false;
+        }
+
+        private void LogSaveButton_Click(object sender, EventArgs e)
+        {
+            if (Loglist.Count == 0)
+            {
+                RawTextBox.AppendText("Log list empty\n"); // <-- For debugging use.
+            }
+            else if (string.IsNullOrEmpty(fileNameTextBox.Text) || string.IsNullOrEmpty(logfilename) || logfilename.IndexOfAny(Path.GetInvalidFileNameChars()) < 0)
+            {
+                RawTextBox.AppendText("File name invalid\n"); // <-- For debugging use.
+            }
+            else if (File.Exists(logfilename))
+            {
+                RawTextBox.AppendText(string.Format("File {0} already exists\n", logfilename)); // <-- For debugging use.
+            }
+            else
+            {
+                RawTextBox.AppendText("Log File: " + logfilename + "\n"); // <-- For debugging use.
+                RawTextBox.AppendText("Saving log... ");
+
+                //RawTextBox.AppendText(string.Format("{0}, {1}, {2}, {3}\n", k.t, k.X, k.Y, k.Z));
+
+                using (StreamWriter outputFile = new StreamWriter(logfilename))
+                {
+                    foreach (AccelDataPacket k in Loglist)
+                    {
+                        outputFile.WriteLine(string.Format("{0}, {1}, {2}, {3}", k.t, k.X, k.Y, k.Z));
+                    }
+                }
+
+                RawTextBox.AppendText("done\n");
+            }
         }
     }
 }
