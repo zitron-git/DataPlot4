@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Threading;
+using System.Net;
+using System.Net.Sockets;
 using System.IO;
 using System.IO.Ports;
 using ZedGraph;
@@ -25,6 +27,12 @@ namespace DataPlot3
             public short Y;
             public short Z;
         }
+        private static Thread _RSIThread;
+
+        UdpClient UDPServer;
+        IPEndPoint ACCELEP = null;
+
+        int receiveport = 0;
 
         int NoOfCurves, Samples;
         int[,] colourList = {{128,0,0},{0,128,0},{0,0,128},{0,128,128},{128,128,0},{255,0,0},{0,255,0},
@@ -43,13 +51,11 @@ namespace DataPlot3
         private string logfilename;
         private int linesLogged;
 
+        private volatile bool _shouldStop, _streaming;
+
         List<AccelDataPacket> Loglist = new List<AccelDataPacket>();
         List<RollingPointPairList> Data = new List<RollingPointPairList>();
         List<IPointListEdit> IPoints = new List<IPointListEdit>();
-
-        delegate void SerialDataReceivedDelegate(object sender, SerialDataReceivedEventArgs e);
-
-        delegate void SerialErrorReceivedDelegate(object sender, SerialErrorReceivedEventArgs e);
 
         //these are copied from the intarwebs, converts struct to byte array
         private static byte[] StructureToByteArray(object obj)
@@ -78,6 +84,22 @@ namespace DataPlot3
             return obj;
         }
 
+        static string ByteToHexBitFiddle(byte[] bytes)
+        {
+            char[] c = new char[bytes.Length * 2];
+            int b;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                b = bytes[i] >> 4;
+                c[i * 2] = (char)(55 + b + (((b - 10) >> 31) & -7));
+                b = bytes[i] & 0xF;
+                c[i * 2 + 1] = (char)(55 + b + (((b - 10) >> 31) & -7));
+            }
+            return new string(c);
+        }
+
+
+
         private void GetPortList()
         {
             String[] realports = SerialPort.GetPortNames();
@@ -102,6 +124,13 @@ namespace DataPlot3
             InitializeComponent();
 
             Logging = false;
+            _streaming = false;
+            _shouldStop = true;
+
+            COMPortStatusLight.Border.ChromeWidth = 2;
+            COMPortStatusLight.Border.RimWidth = 2;
+            UDPStatusLight.Border.ChromeWidth = 2;
+            UDPStatusLight.Border.RimWidth = 2;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -131,15 +160,26 @@ namespace DataPlot3
 
             if (Port.IsOpen)
             {
-                timer1.Enabled = false;
+                _streaming = false;
 
-                Port.Close();
+                Port.Write("o");
+
+                Thread.Sleep(Port.ReadTimeout); //Wait for reading threads to finish
+
+                new Thread(() =>
+                {
+                    Thread.CurrentThread.IsBackground = true;
+                    Port.Close();
+                }).Start();
+
+
 
                 COMPortStatusLight.Value = -1;
                 COMConnectButton.Text = "Connect";
 
                 StopStreamButton.Enabled = false;
                 StartStreamButton.Enabled = false;
+                timer1.Enabled = false;
             }
             else
             {
@@ -281,6 +321,69 @@ namespace DataPlot3
             return false;
         }
 
+        private void ProcessUDP()
+        {
+            this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText("Thread Started\n"); });
+
+            try
+            {
+                UDPServer = new UdpClient(receiveport);
+            }
+            catch (Exception e)
+            {
+                this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText(e.ToString() + "\n"); });
+                timer1.Stop();
+                return;
+            }
+
+            UDPServer.Client.ReceiveTimeout = 1000;
+
+            while (!_shouldStop)
+            {
+                try
+                {
+                    //receive is blocking
+                    byte[] data = UDPServer.Receive(ref ACCELEP);
+
+                    if (data == null || data.Length == 0)
+                    {
+                        this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText("\nReceive thread timed out\n"); });
+                    }
+                    else
+                    {
+                        //this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText(ByteToHexBitFiddle(data) + "\n"); });
+
+                        byte len, id;
+
+                        len = data[2];
+                        id = data[3];
+
+                        byte[] temp = new byte[len];
+
+                        switch (id)
+                        {
+                            case 0: //accel packet
+                                Array.Copy(data, 3, temp, 0, len);
+                                APacket = (AccelDataPacket)ByteArrayToStructure(temp, APacket);
+                                //this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText(ByteToHexBitFiddle(temp) + "\n"); });
+                                this.Invoke(new EventHandler(ProcessData));
+                                break;
+                        }
+
+                        //this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText(string.Format("{0} {1}\n", len, id)); });
+                    }
+                }
+                catch
+                {
+                    //this.Invoke((MethodInvoker)delegate { DebugTextBox.AppendText("\nReceive thread timed out\n"); });
+                }
+            }
+
+            timer1.Stop();
+            UDPServer.Close();
+            this.Invoke((MethodInvoker)delegate { RawTextBox.AppendText("Thread Closed\n"); });
+        }
+
         private void ReadError(object sender, EventArgs e)
         {
             RawTextBox.AppendText("Read Line Error\n");
@@ -335,55 +438,29 @@ namespace DataPlot3
 
         private void SerialPort_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
         {
-            while (Port.BytesToRead > 0)
+            if (Port.IsOpen && _streaming)
             {
-                if (processCOM())
+                while (Port.BytesToRead > 5)
                 {
-                    switch (id)
+                    if (processCOM())
                     {
-                        case 0:
-                            APacket = (AccelDataPacket)ByteArrayToStructure(buffer, APacket);
-                            this.Invoke(new EventHandler(ProcessData));
-                            break;
-                        default:
-                            this.Invoke(new EventHandler(ReadError));
-                            break;
+                        switch (id)
+                        {
+                            case 0:
+                                APacket = (AccelDataPacket)ByteArrayToStructure(buffer, APacket);
+                                this.Invoke(new EventHandler(ProcessData));
+                                break;
+                            default:
+                                this.BeginInvoke(new EventHandler(ReadError));
+                                break;
+                        }
+                    }
+                    if (!Port.IsOpen || !_streaming)
+                    {
+                        break;
                     }
                 }
             }
-            //int BufferLength = Port.BytesToRead;
-            //StringBuilder tempS = new StringBuilder();
-            /*
-            while (BufferLength > 0 && Port.IsOpen)
-            {
-                try
-                {
-                    //tempS.Append(MAASerialPort.ReadLine());
-                    COMRx = Port.ReadLine();
-                    //tempS.Length = 0;
-
-
-                    // This is the fast way - run in the same thread (causes issues with seril.close)
-                    //if (this.InvokeRequired)
-                    //{
-                    //    this.Invoke(new SerialDataReceivedDelegate(ProcessCOMRx), sender, e);
-                    //}
-                    //else
-                    //{
-                    //    ProcessCOMRx(sender, e);
-                    //}
-
-                    // This is the slow way - run in a new thread
-                    this.BeginInvoke(new EventHandler(ProcessCOMRx));
-
-                    if (Port.IsOpen)
-                        BufferLength = Port.BytesToRead;
-                }
-                catch
-                {
-                    this.BeginInvoke(new EventHandler(ReadLineError));
-                }
-            }*/
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -392,6 +469,14 @@ namespace DataPlot3
             ZedGraphControl1.Invalidate();
             LinesLoggedLabel.Text = string.Format("Logged = {0,7}", linesLogged);
             DeltaTLabel.Text = string.Format("Delta T = {0,7}", deltaT);
+
+            if (!_shouldStop)
+            {
+                if (ACCELEP == null)
+                    IPLabel.Text = "No IP";
+                else
+                    IPLabel.Text = ACCELEP.Address.ToString();
+            }
         }
 
         private void COMRefreshButton_Click(object sender, EventArgs e)
@@ -401,11 +486,13 @@ namespace DataPlot3
 
         private void StartStreamButton_Click(object sender, EventArgs e)
         {
+            _streaming = true;
             Port.Write("s");
         }
 
         private void StopStreamButton_Click(object sender, EventArgs e)
         {
+            _streaming = false;
             Port.Write("o");
         }
 
@@ -430,7 +517,7 @@ namespace DataPlot3
 
         private void LogStartButton_Click(object sender, EventArgs e)
         {
-            logfilename = fileNameLabel.Text + "\\" + fileNameTextBox.Text;           
+            logfilename = fileNameLabel.Text + "\\" + fileNameTextBox.Text;
             Logging = true;
             linesLogged = 0;
 
@@ -472,6 +559,34 @@ namespace DataPlot3
                 }
 
                 RawTextBox.AppendText("done\n");
+            }
+        }
+
+        private void StartUDPButton_Click(object sender, EventArgs e)
+        {
+            if (_shouldStop == false)
+            {
+                _shouldStop = true;
+                StartUDPButton.Text = "Start";
+                timer1.Stop();
+                UDPStatusLight.Value = -1;
+            }
+            else
+            {
+                _shouldStop = false;
+                receiveport = int.Parse(UDPortBox.Text);
+
+                Data.Clear();
+                IPoints.Clear();
+                deleteCurves();
+                initCurves();
+
+                _RSIThread = new Thread(ProcessUDP);
+                _RSIThread.IsBackground = true;
+                _RSIThread.Start();
+                StartUDPButton.Text = "Stop";
+                timer1.Start();
+                UDPStatusLight.Value = 1;
             }
         }
     }
